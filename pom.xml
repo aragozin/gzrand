@@ -28,7 +28,7 @@
 
   <groupId>org.gridkit.gzrand</groupId>
   <artifactId>gzrand</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.1</version>
   <name>${project.groupId}::${project.artifactId}</name>
   <description>Random access support for GZ/Deflate format</description>
 
@@ -52,7 +52,7 @@
     <connection>scm:git:https://github.com/aragozin/gzrand.git</connection>
     <developerConnection>scm:git:https://github.com/aragozin/gzrand.git</developerConnection>
     <url>https://github.com/aragozin/gzrand</url>
-    <tag>HEAD</tag>
+    <tag>gzrand-0.1</tag>
   </scm>
 
   <dependencies>
