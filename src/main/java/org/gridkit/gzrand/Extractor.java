@@ -52,9 +52,21 @@ class Extractor {
             startOffs = here.out;
         }
 
-        for (long rem = offset - startOffs; rem > 0;) {
-            rem -= extract(skipBuf, 0, (rem > skipBuf.length) ? skipBuf.length : (int) rem);
+        long len = offset - startOffs;
+        skipBytes(len);
+    }
+
+    public long skipBytes(long len) throws IOException {
+        long skipped = 0;
+        for (long rem = len; rem > 0;) {
+            int n = extract(skipBuf, 0, (rem > skipBuf.length) ? skipBuf.length : (int) rem);
+            if (n < 0) {
+                return skipped;
+            }
+            rem -= n;
+            skipped += n;
         }
+        return skipped;
     }
 
     public void close() {

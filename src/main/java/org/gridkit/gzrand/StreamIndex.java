@@ -99,6 +99,14 @@ class StreamIndex {
         return "Index[points:" + idx.size() + ",infSize:" + inflatedSize + "]";
     }
 
+    public String dump() {
+        StringBuilder sb = new StringBuilder();
+        for(Checkpoint cp:  idx) {
+            sb.append("#" + Long.toHexString(cp.out)).append("\n");
+        }
+        return sb.toString();
+    }
+
     public static StreamIndex buildIndex(InputStream in, long span) throws IOException {
         int ret;
         long totin, totout; /* our own total counters to avoid 4GB limit */
@@ -148,6 +156,15 @@ class StreamIndex {
                      */
                     int inUsed = strm.getAvailIn();
                     int outUsed = strm.getAvailOut();
+
+                    Checkpoint lastCP = null;
+                    if (totout > 0) {
+                        lastCP = new Checkpoint(totout, totin);
+                        if (!strm.copyInfState(lastCP)) {
+                            // state were not copied
+                            lastCP = null;
+                        }                        
+                    }
                     ret = strm.inflateBlock(); /* return at end of block */
                     inUsed = inUsed - strm.getAvailIn();
                     outUsed = outUsed - strm.getAvailOut();
@@ -162,29 +179,19 @@ class StreamIndex {
                         totout += outUsed;
                     }
     
-                    if (ret == Inflater.Z_STREAM_END) {
-                        break;
-                    } else if (ret != Inflater.Z_OK) {
+                    if (ret != Inflater.Z_OK && ret != Inflater.Z_STREAM_END) {
                         throw new IOException("Decompression error (" + ret + ")");
                     }
     
-                    /*
-                     * if at end of block, consider adding an index entry (note
-                     * that if data_type indicates an end-of-block, then all of
-                     * the uncompressed data from that block has been delivered,
-                     * and none of the compressed data after that block has been
-                     * consumed, except for up to seven bits) -- the totout == 0
-                     * provides an entry Point after the zlib or gzip header,
-                     * and assures that the index always has at least one access
-                     * Point; we avoid creating an access Point after the last
-                     * block by checking bit 6 of data_type
-                     */
-                    if (totout == 0 || totout - last > span) {
-                        final Checkpoint point = new Checkpoint(totout, totin);
-                        if (strm.copyInfState(point)) {
-                            index.add(point);
-                            last = totout;
+                    if (lastCP != null && totout - last > span) {
+                        index.add(lastCP);
+                        while(last + span < totout) {
+                            last += span;
                         }
+                    }
+                    
+                    if (ret == Inflater.Z_STREAM_END) {
+                        break;
                     }
                 } while (strm.getAvailIn() != 0);
             } while (ret != Inflater.Z_STREAM_END);

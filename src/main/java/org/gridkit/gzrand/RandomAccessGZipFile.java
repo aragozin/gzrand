@@ -64,11 +64,14 @@ public class RandomAccessGZipFile extends RandomAccessInputStream {
         if (offset >= inflatedSize) {
             pos = inflatedSize;
         }
+        else if (pos == offset) {
+            return;
+        }
         else {
             Checkpoint cp = index.seekIndexPoint(offset);
             long cout = cp == null ? 0 : cp.out;
             if (pos <= offset && pos > cout) {
-                skip(offset - pos);
+                pos += extractor.skipBytes(offset - pos);
             }
             else {
                 this.pos = offset;
