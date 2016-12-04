@@ -17,10 +17,13 @@ package org.gridkit.gzrand;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 
 public class RandomAccessFileInputStream extends RandomAccessInputStream {
 
     protected final RandomAccessFile raf;
+    private FileChannel chan;
 
     public RandomAccessFileInputStream(RandomAccessFile raf) {
         this.raf = raf;
@@ -32,6 +35,29 @@ public class RandomAccessFileInputStream extends RandomAccessInputStream {
             return raf.read();
         } finally {
             afterRead();
+        }
+    }
+
+    @Override
+    public int read(ByteBuffer buffer) throws IOException {
+        if (buffer.hasArray()) {
+            int n = read(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+            if (n < 0) {
+                return -1;
+            }
+            else {
+                buffer.position(buffer.position() + n);
+                return n;
+            }
+        }
+        else {
+            if (chan == null) {
+                chan = raf.getChannel();
+            }
+            chan.position(raf.getFilePointer());
+            int n = chan.read(buffer);
+            raf.seek(chan.position());
+            return n;
         }
     }
 
@@ -70,6 +96,14 @@ public class RandomAccessFileInputStream extends RandomAccessInputStream {
     @Override
     public void close() throws IOException {
         raf.close();
+        if (chan != null) {
+            try {
+                chan.close();
+            }
+            catch(IOException e) {
+                // ignore
+            }
+        }
     }
 
     public void seek(long offset) throws IOException {

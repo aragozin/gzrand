@@ -16,6 +16,7 @@
 package org.gridkit.gzrand;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.gridkit.gzrand.StreamIndex.Checkpoint;
 
@@ -139,6 +140,24 @@ public class RandomAccessGZipFile extends RandomAccessInputStream {
         }
         else {
             int n = extractor.extract(buf, offset, len);
+            if (n < 0) {
+                return -1;
+            }
+            pos += n;
+            return n;
+        }
+    }
+
+    public int read(ByteBuffer bb) throws IOException {
+        ensureOpen();
+        if (pos >= inflatedSize) {
+            return -1;
+        }
+        else {
+            int n = extractor.extract(bb);
+            if (n < 0) {
+                return -1;
+            }
             pos += n;
             return n;
         }

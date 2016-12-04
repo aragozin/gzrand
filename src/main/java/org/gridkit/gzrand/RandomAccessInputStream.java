@@ -18,6 +18,7 @@ package org.gridkit.gzrand;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 
 /**
  * {@link InputStream} extended with seek functionality.
@@ -42,6 +43,12 @@ public abstract class RandomAccessInputStream extends InputStream {
      */
     public abstract long getFilePointer() throws IOException;
 
+    /**
+     * Read data into {@link ByteBuffer}. Simlar to {@link #read(byte[])}.
+     * @throws IOException
+     */
+    public abstract int read(ByteBuffer buffer) throws IOException;
+    
     @Override
     public long skip(long n) throws IOException {
         long fp = getFilePointer();

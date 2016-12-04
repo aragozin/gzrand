@@ -16,10 +16,11 @@
 package org.gridkit.gzrand;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 class Extractor {
 
-    private final byte[] skipBuf = new byte[2 << 16];
+    private final byte[] skipBuf = new byte[64 << 10];
     private final byte[] input;
     private final Inflater inflater;
     private final RandomAccessInputStream inStream;
@@ -72,6 +73,28 @@ class Extractor {
     public void close() {
     }
 
+    public int extract(ByteBuffer bb) throws IOException {
+        if (pastEof) {
+            return -1;
+        }
+        if (bb.hasArray()) {
+            byte[] a = bb.array();
+            int offs = bb.arrayOffset() + bb.position();
+            int n = extract(a, offs, bb.remaining());
+            bb.position(bb.position() + n);
+            return n;
+        }
+        if (bb.remaining() > 0) {
+            int n = extract(skipBuf, 0, bb.remaining());
+            if (n < 0) {
+                return -1;
+            }
+            bb.put(skipBuf, 0, n);
+            return n;
+        }
+        return 0;
+    }
+    
     public int extract(byte[] buffer, int offs, int len) throws IOException {
         if (pastEof) {
             return -1;
